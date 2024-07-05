@@ -1,13 +1,8 @@
-WITH value_string AS (
+WITH kafka_data AS (
     SELECT
-        CAST(value AS STRING) AS value
+        from_json(CAST(value AS STRING), 'struct<id:int,value:string>') AS json_value
     FROM
         {{ source('default', 'kafka_source_table') }}
-), kafka_data AS (
-    SELECT
-        from_json(value, 'struct<id:int,value:string>') AS json_value
-    FROM
-        value_string
 )
 
 SELECT
