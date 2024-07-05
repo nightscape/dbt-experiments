@@ -1,0 +1,20 @@
+{{
+  config(
+    materialized='incremental',
+    incremental_strategy='append',
+  )
+}}
+
+-- Use the `ref` function to select from other models
+{% set query %}
+SELECT * FROM {{ ref('my_first_dbt_model') }} LIMIT 5
+{% endset %}
+
+{% if execute %}
+  {% set results = run_query(query) %}
+  {% do log(results.columns, info=True) %}
+  {% do log(results.rows, info=True) %}
+{% endif %}
+select *
+from {{ ref('my_first_dbt_model') }}
+

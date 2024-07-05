@@ -1,0 +1,63 @@
+
+version: 2
+
+sources:
+  - name: default
+    tables:
+      - name: my_avro_table
+        description: "Example records stored as Avro files in local storage"
+        external:
+          location: './avro'
+          using: avro
+          options:
+            avro.schema.url: './my-avro-record.avsc'
+        columns:
+          - name: id
+            data_type: int
+            description: "ID"
+          - name: name
+            data_type: string
+            description: "The name of the record"
+          - name: age
+            data_type: int
+            description: "Age of the record"
+          - name: email
+            data_type: string
+            description: "Email of the record"
+      - name: kafka_source_table
+        description: "Example records stored in Kafka"
+        external:
+          location: "kafka://{{ env_var('KAFKA_BROKER_PORT', 'default_port') }}"
+          using: kafka
+          options:
+            kafka.bootstrap.servers: '{{ env_var("KAFKA_BOOTSTRAP_SERVERS", "localhost:9193") }}'
+            subscribe: 'json_stream'
+            startingOffsets: earliest
+models:
+  - name: kafka_direct_model
+    description: "Model to read directly from Kafka source table"
+    columns:
+      - name: id
+        description: "The primary key for this table"
+        data_tests:
+          - accepted_values:
+              values: [1]
+
+#  - name: my_first_dbt_model
+#    description: "A starter dbt model"
+#    columns:
+#      - name: id
+#        description: "The primary key for this table"
+#        data_tests:
+#          - unique
+#          - not_null
+#
+#  - name: my_avro_out
+#    custom_schema_name: default
+#    description: "A starter dbt model"
+#    columns:
+#      - name: id
+#        description: "The primary key for this table"
+#        data_tests:
+#          - unique
+#          - not_null

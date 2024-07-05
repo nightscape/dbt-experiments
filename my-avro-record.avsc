@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "MyAvroRecord",
+  "namespace": "com.example",
+  "fields": [
+    {
+      "name": "id",
+      "type": "int"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "age",
+      "type": "int"
+    },
+    {
+      "name": "email",
+      "type": "string"
+    }
+  ]
+}

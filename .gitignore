@@ -1,0 +1,12 @@
+target/
+dbt_packages/
+logs/
+__pycache__/
+.pytest_cache/
+.venv/
+spark-warehouse/
+metastore_db/
+part-00*
+.part-00*
+*.avro
+*.log
