@@ -8,6 +8,9 @@ from confluent_kafka import Producer, Consumer, KafkaError, KafkaException
 from testcontainers.kafka import KafkaContainer
 from pyspark.sql import SparkSession
 from shutil import rmtree
+import avro.schema
+from avro.io import DatumWriter
+from io import BytesIO
 
 kafka = KafkaContainer().with_kraft()
 
@@ -64,11 +67,21 @@ def create_topic(topic_name):
 def produce_messages():
     create_topic("data_stream")
     producer = Producer({"bootstrap.servers": kafka.get_bootstrap_server()})
+    
+    # Load Avro schema
+    schema = avro.schema.parse(open("my-avro-record.avsc", "rb").read())
+    writer = DatumWriter(schema)
+    
     messages = [{"id": 1, "value": "foo"}, {"id": 2, "value": "bar"}]
     for message in messages:
         try:
-            producer.produce("data_stream", value=json.dumps(message).encode("utf-8"))
-            print(f"Produced message: {message}")
+            # Serialize message to Avro
+            bytes_writer = BytesIO()
+            writer.write(message, avro.io.BinaryEncoder(bytes_writer))
+            avro_bytes = bytes_writer.getvalue()
+            
+            producer.produce("data_stream", value=avro_bytes)
+            print(f"Produced Avro message: {message}")
         except KafkaException as e:
             print(f"Failed to produce message: {e}")
     producer.flush()
