@@ -1,18 +1,18 @@
-WITH kafka_data AS (
+WITH value_string AS (
     SELECT
-        key,
-        value
+        CAST(value AS STRING) AS value
     FROM
-        {{ source('default', 'kafka_source_table') }}
-), parsed_data AS (
+        {{ source('experiments', 'kafka_source_table') }}
+), kafka_data AS (
     SELECT
-        from_json(CAST(value AS STRING), 'struct<id:int,value:string>') AS json_value
+        -- TODO Infer schema from JSON
+        from_json(value, schema_of_json('{"id":0, "value":""}')) AS json_value
     FROM
-        kafka_data
+        value_string
 )
 
 SELECT
-    json_value.id,
-    json_value.value
+    json_value.*
 FROM
-    parsed_data
+    kafka_data
+

@@ -58,17 +58,18 @@ def produce_messages():
 
 
 def run_dbt():
+    subprocess.run(["dbt", "run-operation", "stage_external_sources", "--vars", "ext_full_refresh: true"], capture_output=False)
     subprocess.run(["dbt", "run"], capture_output=False)
 
 
 def read_results_from_spark(spark: SparkSession):
     spark.sql("SHOW SCHEMAS").show(100, False)
     spark.sql("SHOW TABLES IN experiments").show(100, False)
-    spark.sql("DESC EXTENDED kafka_source_table").show(100, False)
+    spark.sql("DESC EXTENDED experiments.kafka_source_table").show(100, False)
     df = spark.sql("SELECT * FROM experiments.kafka_direct_model")
     results = df.collect()
     spark.stop()
-    return results
+    return [row.asDict() for row in results]
 
 
 def test_dbt_spark_pipeline(spark_session: SparkSession):
@@ -79,11 +80,10 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
     print("Produced messages")
     run_dbt()
     print("Ran dbt")
-    time.sleep(10)  # Wait for dbt to finish processing
+    time.sleep(1)  # Wait for dbt to finish processing
     print("Waited for dbt")
     results = read_results_from_spark(spark_session)
-    table_names = [row.tableName for row in results]
-    assert len(table_names) == 2
+    assert len(results) == 2
     assert {"id": 1, "value": "foo"} in results
     assert {"id": 2, "value": "bar"} in results
 
