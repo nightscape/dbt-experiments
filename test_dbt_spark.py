@@ -4,7 +4,7 @@ import json
 import os
 import time
 from confluent_kafka.admin import AdminClient, NewTopic
-from confluent_kafka import Producer, Consumer, KafkaError
+from confluent_kafka import Producer, Consumer, KafkaError, KafkaException
 from testcontainers.kafka import KafkaContainer
 from pyspark.sql import SparkSession
 from shutil import rmtree
@@ -49,11 +49,28 @@ def setup_data():
 #        pass
 
 
+def create_topic(topic_name):
+    admin_client = AdminClient({'bootstrap.servers': kafka.get_bootstrap_server()})
+    new_topic = NewTopic(topic_name, num_partitions=1, replication_factor=1)
+    try:
+        admin_client.create_topics([new_topic])
+        print(f"Topic '{topic_name}' created successfully")
+    except KafkaException as e:
+        if e.args[0].code() == KafkaError.TOPIC_ALREADY_EXISTS:
+            print(f"Topic '{topic_name}' already exists")
+        else:
+            raise
+
 def produce_messages():
+    create_topic("data_stream")
     producer = Producer({"bootstrap.servers": kafka.get_bootstrap_server()})
     messages = [{"id": 1, "value": "foo"}, {"id": 2, "value": "bar"}]
     for message in messages:
-        producer.produce("data_stream", value=json.dumps(message).encode("utf-8"))
+        try:
+            producer.produce("data_stream", value=json.dumps(message).encode("utf-8"))
+            print(f"Produced message: {message}")
+        except KafkaException as e:
+            print(f"Failed to produce message: {e}")
     producer.flush()
 
 
@@ -73,19 +90,18 @@ def read_results_from_spark(spark: SparkSession):
 
 
 def test_dbt_spark_pipeline(spark_session: SparkSession):
-    #spark_session.sql("DROP DATABASE IF EXISTS experiments CASCADE")
-    # clean_kafka_topic('foo_stream')
     print("Starting")
     produce_messages()
     print("Produced messages")
     run_dbt()
     print("Ran dbt")
-    time.sleep(1)  # Wait for dbt to finish processing
+    time.sleep(5)  # Increase wait time to ensure dbt has finished processing
     print("Waited for dbt")
     results = read_results_from_spark(spark_session)
-    assert len(results) == 2
-    assert {"id": 1, "value": "foo"} in results
-    assert {"id": 2, "value": "bar"} in results
+    print(f"Results: {results}")
+    assert len(results) == 2, f"Expected 2 results, got {len(results)}"
+    assert {"id": 1, "value": "foo"} in results, "Expected {'id': 1, 'value': 'foo'} in results"
+    assert {"id": 2, "value": "bar"} in results, "Expected {'id': 2, 'value': 'bar'} in results"
 
 
 if __name__ == "__main__":
