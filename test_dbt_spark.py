@@ -53,7 +53,7 @@ def produce_messages():
     producer = Producer({"bootstrap.servers": kafka.get_bootstrap_server()})
     messages = [{"id": 1, "value": "foo"}, {"id": 2, "value": "bar"}]
     for message in messages:
-        producer.produce("json_stream", value=json.dumps(message).encode("utf-8"))
+        producer.produce("data_stream", value=json.dumps(message).encode("utf-8"))
     producer.flush()
 
 

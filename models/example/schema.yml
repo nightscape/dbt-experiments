@@ -33,7 +33,7 @@ sources:
           using: kafka
           options:
             kafka.bootstrap.servers: '{{ env_var("KAFKA_BOOTSTRAP_SERVERS", "localhost:9193") }}'
-            subscribe: 'json_stream'
+            subscribe: 'data_stream'
             startingOffsets: earliest
 models:
   - name: kafka_direct_model
