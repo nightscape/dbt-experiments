@@ -12,6 +12,7 @@ dependencies = [
     "confluent_kafka>=2.4.0",
     "testcontainers>=3.7.1",
     "pytest-spark>=0.6.0",
+    "avro>=1.11.3",
 ]
 readme = "README.md"
 requires-python = ">= 3.8"

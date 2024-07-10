@@ -88,8 +88,8 @@ def produce_messages():
 
 
 def run_dbt():
-    subprocess.run(["dbt", "run-operation", "stage_external_sources", "--vars", "ext_full_refresh: true"], capture_output=False)
-    subprocess.run(["dbt", "run"], capture_output=False)
+    subprocess.run(["dbt", "run-operation", "stage_external_sources", "--vars", "ext_full_refresh: true"], capture_output=False, check=True)
+    subprocess.run(["dbt", "run"], capture_output=False, check=True)
 
 
 def read_results_from_spark(spark: SparkSession):

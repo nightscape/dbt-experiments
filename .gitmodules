@@ -1,0 +1,3 @@
+[submodule "avro-functions"]
+	path = avro-functions
+	url = ../avro-functions-backport
