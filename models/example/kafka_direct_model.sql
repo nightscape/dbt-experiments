@@ -1,4 +1,4 @@
-{{ config(materialized='incremental') }}
+{{ config(materialized='incremental', incremental_strategy='append', file_format='iceberg') }}
 
 WITH kafka_data AS (
     SELECT
