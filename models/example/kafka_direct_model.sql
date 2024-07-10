@@ -3,12 +3,13 @@
 WITH kafka_data AS (
     SELECT
         from_avro(value, '{ "type": "record", "name": "MyAvroRecord", "namespace": "com.example", "fields": [ { "name": "id", "type": "int" }, { "name": "value", "type": "string" } ] }', null) AS parsed_value,
+        offset AS kafka_offset,
         timestamp AS kafka_timestamp
     FROM
         {{ source('kafka', 'data_stream') }}
 {% if is_incremental() %}
     WHERE
-        timestamp > (SELECT COALESCE(MAX(kafka_timestamp), CAST('1970-01-01' AS TIMESTAMP)) FROM {{ this }})
+        offset > {{ retrieve_max_value(this.schema ~ "." ~ this.identifier, "kafka_offset", -1) }}
 {% endif %}
 ),
 
@@ -26,6 +27,7 @@ SELECT
     kd.parsed_value.id,
     kd.parsed_value.value,
     kd.kafka_timestamp,
+    kd.kafka_offset,
 {% if is_incremental() %}
     COALESCE(pd.first_seen_timestamp, kd.kafka_timestamp) AS first_seen_timestamp
 {% else %}

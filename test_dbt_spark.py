@@ -85,7 +85,7 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
     test_data = [
         [{"id": 1, "value": "foo"}, {"id": 2, "value": "bar"}],
         [{"id": 3, "value": "baz"}, {"id": 4, "value": "qux"}],
-        [{"id": 5, "value": "quux"}, {"id": 1, "value": "updated_foo"}]
+        [{"id": 5, "value": "quux"}, {"id": 1, "value": "foo_up"}]
     ]
 
     expected_results = []
@@ -106,9 +106,10 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
 
         # Update expected results
         for message in messages:
-            same_values = [item['kafka_timestamp'] for item in results if item['id'] == message['id']]
-            print(f"Same values: {same_values}")
-            first_seen = min(same_values)
+            timestamps_with_same_id = [item['kafka_timestamp'] for item in results if item['id'] == message['id']]
+            print(message)
+            print(f"Rows with same ID: {timestamps_with_same_id}")
+            first_seen = min(timestamps_with_same_id)
             message['first_seen_timestamp'] = first_seen
             expected_results.append(message)
 
