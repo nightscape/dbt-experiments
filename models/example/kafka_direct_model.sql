@@ -2,7 +2,7 @@
 
 WITH kafka_data AS (
     SELECT
-        from_avro(value, '{ "type": "record", "name": "MyAvroRecord", "namespace": "com.example", "fields": [ { "name": "id", "type": "int" }, { "name": "value", "type": "string" } ] }', null) AS parsed_value,
+        from_avro(value, '{ "type": "record", "name": "MyAvroRecord", "namespace": "dev.mauch", "fields": [ { "name": "id", "type": "int" }, { "name": "value", "type": "string" } ] }', null) AS parsed_value,
         offset AS kafka_offset,
         timestamp AS kafka_timestamp
     FROM
