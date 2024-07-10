@@ -2,30 +2,10 @@
 version: 2
 
 sources:
-  - name: experiments
+  - name: kafka
     schema: experiments
     tables:
-      #- name: avro_source_table
-      #  description: "Example records stored as Avro files in local storage"
-      #  external:
-      #    location: './avro'
-      #    using: avro
-      #    options:
-      #      avro.schema.url: './my-avro-record.avsc'
-      #  columns:
-      #    - name: id
-      #      data_type: int
-      #      description: "ID"
-      #    - name: name
-      #      data_type: string
-      #      description: "The name of the record"
-      #    - name: age
-      #      data_type: int
-      #      description: "Age of the record"
-      #    - name: email
-      #      data_type: string
-      #      description: "Email of the record"
-      - name: kafka_source_table
+      - name: data_stream
         description: "Example records stored in Kafka"
         # Uses https://github.com/dbt-labs/dbt-external-tables
         external:
