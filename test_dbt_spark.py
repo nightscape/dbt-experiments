@@ -88,7 +88,7 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
         [{"id": 5, "value": "quux"}, {"id": 1, "value": "foo_up"}]
     ]
 
-    expected_results = []
+    expected_results = {}
     start_time = datetime.now()
 
     for i, messages in enumerate(test_data):
@@ -99,35 +99,39 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
         run_dbt(full_refresh=(i == 0))
         print(f"Ran dbt for run {i+1}")
 
-        time.sleep(5)  # Ensure dbt has finished processing
+        time.sleep(1)  # Ensure dbt has finished processing
 
         results = read_results_from_spark(spark_session)
         print(f"Results for run {i+1}: {results}")
 
         # Update expected results
         for message in messages:
-            timestamps_with_same_id = [item['kafka_timestamp'] for item in results if item['id'] == message['id']]
-            print(message)
-            print(f"Rows with same ID: {timestamps_with_same_id}")
-            first_seen = min(timestamps_with_same_id)
-            message['first_seen_timestamp'] = first_seen
-            expected_results.append(message)
+            if message['id'] not in expected_results:
+                expected_results[message['id']] = {
+                    'value': message['value'],
+                    'first_seen_timestamp': None
+                }
+            else:
+                expected_results[message['id']]['value'] = message['value']
 
         assert len(results) == len(expected_results), f"Expected {len(expected_results)} results, got {len(results)}"
 
-        for expected in expected_results:
-            result = next((r for r in results if r['id'] == expected['id'] and r['value'] == expected['value']), None)
-            assert result is not None, f"Expected result with id {expected['id']} not found"
-            assert result['value'] == expected['value'], f"Expected value {expected['value']} for id {expected['id']}, got {result['value']}"
+        for result in results:
+            expected = expected_results[result['id']]
+            assert result['value'] == expected['value'], f"Expected value {expected['value']} for id {result['id']}, got {result['value']}"
 
             # Check first_seen_timestamp
             first_seen = result['first_seen_timestamp']
             assert start_time <= first_seen <= datetime.now(), f"First seen timestamp {first_seen} is not within expected range"
 
-            # For updated records, ensure kafka_timestamp is more recent than first_seen_timestamp
-            if result['value'] != expected['value']:
-                kafka_timestamp = result['kafka_timestamp']
-                assert kafka_timestamp > first_seen, f"Kafka timestamp {kafka_timestamp} is not more recent than first seen timestamp {first_seen} for updated record"
+            if expected['first_seen_timestamp'] is None:
+                expected['first_seen_timestamp'] = first_seen
+            else:
+                assert first_seen == expected['first_seen_timestamp'], f"First seen timestamp changed for id {result['id']}"
+
+            # Ensure kafka_timestamp is more recent or equal to first_seen_timestamp
+            kafka_timestamp = result['kafka_timestamp']
+            assert kafka_timestamp >= first_seen, f"Kafka timestamp {kafka_timestamp} is not more recent or equal to first seen timestamp {first_seen} for record {result['id']}"
 
     print("All runs completed successfully")
 

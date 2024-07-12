@@ -13,18 +13,22 @@ sources:
           using: kafka
           options:
             kafka.bootstrap.servers: '{{ env_var("KAFKA_BOOTSTRAP_SERVERS", "localhost:9193") }}'
-            subscribe: 'data_stream'
+            subscribe: "data_stream"
             startingOffsets: earliest
 models:
   - name: kafka_direct_model
     description: "Model to read directly from Kafka source table"
+    config:
+      materialized: incremental
+      incremental_strategy: merge
+      unique_key: id
+      file_format: delta
     columns:
       - name: id
         description: "The primary key for this table"
         data_tests:
           - accepted_values:
               values: [1]
-
 #  - name: my_first_dbt_model
 #    description: "A starter dbt model"
 #    columns:

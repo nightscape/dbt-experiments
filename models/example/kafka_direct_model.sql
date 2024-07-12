@@ -1,5 +1,3 @@
-{{ config(materialized='incremental', incremental_strategy='append', file_format='iceberg') }}
-
 WITH kafka_data AS (
     SELECT
         from_avro(value, '{ "type": "record", "name": "MyAvroRecord", "namespace": "dev.mauch", "fields": [ { "name": "id", "type": "int" }, { "name": "value", "type": "string" } ] }', null) AS parsed_value,
