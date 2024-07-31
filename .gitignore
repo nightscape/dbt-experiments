@@ -1,3 +1,4 @@
+.idea/
 target/
 dbt_packages/
 logs/
@@ -6,6 +7,7 @@ __pycache__/
 .venv/
 spark-warehouse/
 metastore_db/
+.hive-metastore
 part-00*
 .part-00*
 *.avro
