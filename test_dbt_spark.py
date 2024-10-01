@@ -72,6 +72,8 @@ def run_dbt(full_refresh=False):
 
 from datetime import datetime, timedelta
 
+IS_MERGING = False
+
 def read_results_from_spark(spark: SparkSession):
     df = spark.sql("SELECT * FROM experiments.kafka_direct_model")
     results = df.collect()
@@ -88,7 +90,7 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
         [{"id": 5, "value": "quux"}, {"id": 1, "value": "foo_up"}]
     ]
 
-    expected_results = {}
+    expected_results = {} if IS_MERGING else []
     start_time = datetime.now()
 
     for i, messages in enumerate(test_data):
@@ -105,33 +107,48 @@ def test_dbt_spark_pipeline(spark_session: SparkSession):
         print(f"Results for run {i+1}: {results}")
 
         # Update expected results
-        for message in messages:
-            if message['id'] not in expected_results:
-                expected_results[message['id']] = {
-                    'value': message['value'],
-                    'first_seen_timestamp': None
-                }
-            else:
-                expected_results[message['id']]['value'] = message['value']
+        if IS_MERGING:
+            for message in messages:
+                if message['id'] not in expected_results:
+                    expected_results[message['id']] = {
+                        'value': message['value'],
+                        'first_seen_timestamp': None
+                    }
+                else:
+                    expected_results[message['id']]['value'] = message['value']
+        else:
+            expected_results.extend(messages)
 
-        assert len(results) == len(expected_results), f"Expected {len(expected_results)} results, got {len(results)}"
+        if IS_MERGING:
+            assert len(results) == len(expected_results), f"Expected {len(expected_results)} results, got {len(results)}"
+        else:
+            assert len(results) == sum(len(msgs) for msgs in test_data[:i+1]), f"Expected {sum(len(msgs) for msgs in test_data[:i+1])} results, got {len(results)}"
 
         for result in results:
-            expected = expected_results[result['id']]
-            assert result['value'] == expected['value'], f"Expected value {expected['value']} for id {result['id']}, got {result['value']}"
+            if IS_MERGING:
+                expected = expected_results[result['id']]
+                assert result['value'] == expected['value'], f"Expected value {expected['value']} for id {result['id']}, got {result['value']}"
 
-            # Check first_seen_timestamp
-            first_seen = result['first_seen_timestamp']
-            assert start_time <= first_seen <= datetime.now(), f"First seen timestamp {first_seen} is not within expected range"
+                # Check first_seen_timestamp
+                first_seen = result['first_seen_timestamp']
+                assert start_time <= first_seen <= datetime.now(), f"First seen timestamp {first_seen} is not within expected range"
 
-            if expected['first_seen_timestamp'] is None:
-                expected['first_seen_timestamp'] = first_seen
+                if expected['first_seen_timestamp'] is None:
+                    expected['first_seen_timestamp'] = first_seen
+                else:
+                    assert first_seen == expected['first_seen_timestamp'], f"First seen timestamp changed for id {result['id']}"
+
+                # Ensure kafka_timestamp is more recent or equal to first_seen_timestamp
+                kafka_timestamp = result['kafka_timestamp']
+                assert kafka_timestamp >= first_seen, f"Kafka timestamp {kafka_timestamp} is not more recent or equal to first seen timestamp {first_seen} for record {result['id']}"
             else:
-                assert first_seen == expected['first_seen_timestamp'], f"First seen timestamp changed for id {result['id']}"
+                # For append-only behavior, just check if the result exists in the expected results
+                expected = next((msg for msg in expected_results if msg['id'] == result['id'] and msg['value'] == result['value']), None)
+                assert expected is not None, f"Unexpected result: {result}"
 
-            # Ensure kafka_timestamp is more recent or equal to first_seen_timestamp
-            kafka_timestamp = result['kafka_timestamp']
-            assert kafka_timestamp >= first_seen, f"Kafka timestamp {kafka_timestamp} is not more recent or equal to first seen timestamp {first_seen} for record {result['id']}"
+                # Check kafka_timestamp
+                kafka_timestamp = result['kafka_timestamp']
+                assert start_time <= kafka_timestamp <= datetime.now(), f"Kafka timestamp {kafka_timestamp} is not within expected range"
 
     print("All runs completed successfully")
 

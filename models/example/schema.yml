@@ -22,7 +22,7 @@ models:
       materialized: incremental
       incremental_strategy: merge
       unique_key: id
-      file_format: delta
+      file_format: iceberg
     columns:
       - name: id
         description: "The primary key for this table"
