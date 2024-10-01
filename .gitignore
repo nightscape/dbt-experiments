@@ -12,3 +12,4 @@ part-00*
 .part-00*
 *.avro
 *.log
+.user.yml
