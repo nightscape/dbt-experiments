@@ -9,43 +9,26 @@ services:
       args:
         - commit_ref=v1.8.0
     depends_on:
-      - dbt-spark3-thrift
+      - dbt-hive-metastore
     privileged: true
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /var/lib/docker:/var/lib/docker
       - $PWD:$PWD
     working_dir: $PWD
     environment:
       TESTCONTAINERS_RYUK_DISABLED: 'true'
-    network_mode: host
-  dbt-spark3-thrift:
-    build:
-      context: ./docker
-      dockerfile: spark.Dockerfile
-    ports:
-      - "10000:10000"
-      - "4040:4040"
-    depends_on:
-      - dbt-hive-metastore
-    command: >
-      --exclude-packages org.slf4j:slf4j-api,org.apache.hadoop:hadoop-client-api,org.apache.hadoop:hadoop-client-runtime
-      --class org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
-      --name Thrift JDBC/ODBC Server
-    volumes:
-      - ./.spark-warehouse/:/spark-warehouse/
-      - ./docker/hive-site.xml:/usr/spark/conf/hive-site.xml
-      - ./docker/spark-defaults.conf:/usr/spark/conf/spark-defaults.conf
-      - ./avro-functions/target/scala-2.12/avro-functions_2.12-0.1.0.jar:/usr/spark/jars/avro-functions_2.12.jar
-      - .:/usr/app/dbt
-    environment:
-      - WAIT_FOR=dbt-hive-metastore:5432
-
+      DOCKER_HOST: "http://dind.docker.internal:2375"
   dbt-hive-metastore:
     image: postgres:9-alpine
+    hostname: metastore.docker.internal
     volumes:
       - ./.hive-metastore/:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=dbt
       - POSTGRES_PASSWORD=dbt
       - POSTGRES_DB=metastore
+  dind:
+    hostname: dind.docker.internal
+    privileged: true
+    image: "docker:dind"
+    environment:
+      DOCKER_TLS_CERTDIR:
