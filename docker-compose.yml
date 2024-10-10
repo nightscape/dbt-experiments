@@ -6,8 +6,6 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-      args:
-        - commit_ref=v1.8.0
     depends_on:
       - dbt-hive-metastore
     privileged: true

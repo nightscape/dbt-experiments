@@ -37,7 +37,6 @@ RUN cargo install --locked watchexec-cli
 
 FROM base AS dbt-spark
 
-ARG commit_ref=main
 ARG extras=all
 
 HEALTHCHECK CMD dbt --version || exit 1
