@@ -14,7 +14,7 @@ services:
     working_dir: $PWD
     environment:
       TESTCONTAINERS_RYUK_DISABLED: 'true'
-      SPARK_JARS_REPOSITORIES: ${SPARK_JARS_REPOSITORIES:-https://repo1.maven.org/}
+      SPARK_JARS_REPOSITORIES: ${SPARK_JARS_REPOSITORIES}
       DOCKER_HOST: "http://dind.docker.internal:2375"
   dbt-hive-metastore:
     image: postgres:9-alpine
