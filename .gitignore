@@ -8,6 +8,7 @@ __pycache__/
 spark-warehouse/
 metastore_db/
 .hive-metastore
+.airflow/
 part-00*
 .part-00*
 *.avro

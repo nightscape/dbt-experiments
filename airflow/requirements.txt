@@ -1,0 +1,3 @@
+dbt-airflow
+dbt-spark[session]>=1.8.0
+pyspark>=3.3.2,<3.4
