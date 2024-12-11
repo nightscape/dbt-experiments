@@ -6,6 +6,8 @@ sources:
     schema: experiments
     tables:
       - name: data_stream
+        config:
+          event_time: timestamp
         description: "Example records stored in Kafka"
         # Uses https://github.com/dbt-labs/dbt-external-tables
         external:

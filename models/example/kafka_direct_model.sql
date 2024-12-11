@@ -1,3 +1,15 @@
+{{ config(
+    materialized='incremental',
+    incremental_strategy='microbatch',
+    event_time='kafka_timestamp',
+    partition_by='timestamp_hour',
+    batch_size='hour',
+    begin=(modules.datetime.datetime.now() - modules.datetime.timedelta(hours=1)).isoformat(),
+    lookback=1,
+    full_refresh=false
+) }}
+
+
 WITH kafka_data AS (
     SELECT
         from_avro(value, '{ "type": "record", "name": "MyAvroRecord", "namespace": "dev.mauch", "fields": [ { "name": "id", "type": "int" }, { "name": "value", "type": "string" } ] }', null) AS parsed_value,
@@ -5,10 +17,6 @@ WITH kafka_data AS (
         timestamp AS kafka_timestamp
     FROM
         {{ source('kafka', 'data_stream') }}
-{% if is_incremental() %}
-    WHERE
-        offset > {{ retrieve_max_value(this.schema ~ "." ~ this.identifier, "kafka_offset", -1) }}
-{% endif %}
 ),
 
 persisted_data AS (
@@ -25,6 +33,7 @@ SELECT
     kd.parsed_value.id,
     kd.parsed_value.value,
     kd.kafka_timestamp,
+    DATE_TRUNC('hour', kd.kafka_timestamp) AS timestamp_hour,
     kd.kafka_offset,
 {% if is_incremental() %}
     COALESCE(pd.first_seen_timestamp, kd.kafka_timestamp) AS first_seen_timestamp
