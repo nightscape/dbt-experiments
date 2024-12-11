@@ -9,8 +9,8 @@ services:
       - dbt-hive-metastore
     privileged: true
     volumes:
-      - $PWD:/usr/app
-    working_dir: /usr/app
+      - $PWD:/usr/app/dbt
+    working_dir: /usr/app/dbt
     environment:
       TESTCONTAINERS_RYUK_DISABLED: 'true'
       SPARK_JARS_REPOSITORIES: ${SPARK_JARS_REPOSITORIES}

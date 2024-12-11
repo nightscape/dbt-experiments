@@ -36,15 +36,20 @@ RUN cargo install --locked watchexec-cli
 
 
 FROM base AS dbt-spark
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 ARG extras=all
 
 HEALTHCHECK CMD dbt --version || exit 1
 
 WORKDIR /usr/app/dbt/
+ENV VIRTUAL_ENV=/venv
+ENV UV_PROJECT_ENVIRONMENT=$VIRTUAL_ENV
 COPY --from=builder /usr/local/cargo/bin/watchexec /usr/local/bin/watchexec
-COPY pyproject.toml requirements.lock ./
-RUN PYTHONDONTWRITEBYTECODE=1 python -m pip install --no-cache-dir -r requirements.lock
+COPY pyproject.toml uv.lock ./
+RUN PYTHONDONTWRITEBYTECODE=1 uv venv && uv sync --frozen
+ENV PATH="/venv/bin:$PATH"
+RUN echo $PATH
 
 COPY . .
-CMD ["/usr/local/bin/watchexec", "-r", "-e", "py,sql,yml,ini", "-i", "target/**", "clear ; pytest -s -l --tb=long test_dbt_spark.py"]
+CMD ["/usr/local/bin/watchexec", "-r", "-e", "py,sql,yml,ini", "-i", "target/**", "clear ; /venv/bin/pytest -s -l --tb=long test_dbt_spark.py"]
